@@ -8,9 +8,13 @@ authors:
   - given-names: Rifat
     family-names: Jumagulov
     email: jum.rifm@gmail.com
-version: 1.0.1
+version: 1.0.2
 date-released: "2026-07-07"
 license: MIT
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.21246333
+    description: Concept DOI (resolves to the latest version)
 keywords:
   - procedural animation
   - divergence-free vector fields

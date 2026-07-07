@@ -64,16 +64,17 @@ Runtime: a few seconds each (`e3`, `e4` ≈ 10 s).
   author = {Rifat Jumagulov},
   year   = {2026},
   note   = {Preprint},
-  doi    = {10.5281/zenodo.XXXXXXX}
+  doi    = {10.5281/zenodo.21246333}
 }
 ```
 
+Archived on Zenodo — concept DOI (always the latest version):
+[10.5281/zenodo.21246333](https://doi.org/10.5281/zenodo.21246333).
 Machine-readable metadata lives in `CITATION.cff` (GitHub renders it as a
 "Cite this repository" button) and `.zenodo.json` (read by Zenodo on release).
 
-> **After minting the DOI:** replace `10.5281/zenodo.XXXXXXX` above with the
-> concept DOI Zenodo returns, and add the arXiv id once endorsement clears
-> (both as a `related_identifiers` entry in `.zenodo.json` and in this BibTeX).
+> **Pending arXiv:** once endorsement clears and the paper is posted, the arXiv id
+> will be added here and as a `related_identifiers` entry in `.zenodo.json`.
 
 ## License
 
