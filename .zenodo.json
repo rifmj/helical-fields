@@ -1,0 +1,21 @@
+{
+  "title": "Beyond curl-noise: helicity and phase coherence controls for divergence-free flow fields",
+  "upload_type": "software",
+  "description": "A solver-free method for synthesizing divergence-free vector fields for the procedural animation of smoke, particles, and other advected media, with three mutually independent controls: spectral slope, helicity, and phase coherence. Built in the frequency domain on the helical (curl-eigenvector) basis; a phase-coherence control interpolates inter-mode phases from random to structured at a fixed power spectrum; an analytic Beltrami mode-sum evaluates per pixel in a fragment shader. Includes the preprint (main.tex/main.pdf) and pinned-seed reproduction code (E1-E5 + GLSL shader).",
+  "creators": [
+    {
+      "name": "Jumagulov, Rifat"
+    }
+  ],
+  "keywords": [
+    "procedural animation",
+    "divergence-free vector fields",
+    "curl-noise",
+    "helicity",
+    "Beltrami flow",
+    "phase coherence",
+    "visual effects"
+  ],
+  "license": "MIT",
+  "access_right": "open"
+}
