@@ -4,6 +4,14 @@ All notable changes to this project are documented here. Versions follow
 [Semantic Versioning](https://semver.org/) and are published as GitHub releases,
 each archived to Zenodo with a citable DOI.
 
+## [1.0.3] — 2026-07-07
+
+Cross-link the OSF project hub.
+
+- Add OSF DOI `10.17605/OSF.IO/J8GFA` to `README.md`, `CITATION.cff`, and as a
+  `related_identifiers` entry (`isVariantFormOf`) in `.zenodo.json`.
+- Bump version to 1.0.3. (arXiv id still pending endorsement.)
+
 ## [1.0.2] — 2026-07-07
 
 Bake the Zenodo DOI into the citable metadata and the PDF title page.

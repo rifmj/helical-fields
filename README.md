@@ -70,6 +70,7 @@ Runtime: a few seconds each (`e3`, `e4` ≈ 10 s).
 
 Archived on Zenodo — concept DOI (always the latest version):
 [10.5281/zenodo.21246333](https://doi.org/10.5281/zenodo.21246333).
+Project hub on OSF: [10.17605/OSF.IO/J8GFA](https://doi.org/10.17605/OSF.IO/J8GFA).
 Machine-readable metadata lives in `CITATION.cff` (GitHub renders it as a
 "Cite this repository" button) and `.zenodo.json` (read by Zenodo on release).
 

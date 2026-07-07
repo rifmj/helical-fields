@@ -8,13 +8,16 @@ authors:
   - given-names: Rifat
     family-names: Jumagulov
     email: jum.rifm@gmail.com
-version: 1.0.2
+version: 1.0.3
 date-released: "2026-07-07"
 license: MIT
 identifiers:
   - type: doi
     value: 10.5281/zenodo.21246333
-    description: Concept DOI (resolves to the latest version)
+    description: Zenodo concept DOI (resolves to the latest version)
+  - type: doi
+    value: 10.17605/OSF.IO/J8GFA
+    description: OSF project hub
 keywords:
   - procedural animation
   - divergence-free vector fields
