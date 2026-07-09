@@ -28,6 +28,8 @@
 \newcommand{\bx}{\mathbf{x}}
 \newcommand{\bk}{\mathbf{k}}
 \newcommand{\bu}{\mathbf{u}}
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bn}{\mathbf{n}}
 \newcommand{\bomega}{\boldsymbol{\omega}}
 \newcommand{\he}{\mathbf{h}}
 \newcommand{\khat}{\hat{\bk}}
@@ -370,6 +372,105 @@ the $\mathcal O(M)$ sum. A CPU port of the shader's exact arithmetic is
 divergence-free to $\max_j|\bk_j\cdot\ehat_{i,j}|=5.6\cdot10^{-16}$ (the only
 nonzero divergence measured is $\mathcal O(h^2)$ finite-difference truncation),
 matching~E3.
+
+\section{Solid obstacles}
+\label{sec:obstacles}
+
+In plain terms: we want the flow to slide around a solid object---a rock, a
+character, a wall---without ever leaking into it, and without running a fluid
+solver to enforce that. The usual worry is that clamping a velocity field near a
+wall reintroduces the very compression the divergence-free construction was meant
+to avoid. The trick that avoids this is to damp the field's \emph{potential}
+rather than the field itself, and only then take the curl: because the result is
+a curl, it is divergence-free by the same identity $\dvg\curl\equiv0$ that
+underlies curl-noise, \emph{for any obstacle and any damping profile}.
+
+Concretely, every field of this paper has an analytic vector potential $\bA$
+($\curl\bA=\bu$): on the helical basis each mode is a curl eigenvector
+\eqref{eq:eigen}, so $\bA=\sum_\bk (a_+\he_+ + a_-\he_-)/(\pm|\bk|)$, and for the
+mode-sum \eqref{eq:modesum} the potential is the term-by-term
+$\bA=\sum_j \bu_j/(s_j|\bk_j|)$. Given a solid described by a signed-distance
+function $d(\bx)$ (positive outside, zero on the surface), we fade the potential
+to zero across a thin band of thickness $\theta$ with a smooth ramp $\alpha$ of
+the distance and take the curl of the faded potential:
+\begin{equation}
+\bu_b(\bx) \;=\; \curl\!\big(\alpha(d/\theta)\,\bA\big)
+\;=\; \tfrac{1}{\theta}\,\alpha'(d/\theta)\,\big(\nabla d\times\bA\big)
+\;+\; \alpha(d/\theta)\,\bu ,
+\label{eq:bounded}
+\end{equation}
+using $\curl(f\bA)=\nabla f\times\bA + f\,\curl\bA$. The ramp is the
+Bridson curl-noise boundary quintic~\cite{bridson2007},
+\begin{equation}
+\alpha(q)=\tfrac{1}{8}\,q\,(15-10q^2+3q^4)\ \ \text{on }[0,1],\qquad
+\alpha(q\le0)=0,\ \ \alpha(q\ge1)=1,
+\label{eq:quintic}
+\end{equation}
+with $\alpha(0)=0$ but $\alpha'(0)=\tfrac{15}{8}>0$, so the wall value is a pure
+tangential slip flow rather than a no-slip dead zone, and $\alpha(1)=1$ with
+$\alpha'(1)=\alpha''(1)=0$, so the field blends $C^2$-smoothly back into the
+unconstrained one at the edge of the band (Fig.~\ref{fig:ramp}). Inside the solid
+($d\le0$) the field is identically zero.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.62\linewidth]{figures/ramp.png}
+  \caption{The Bridson free-slip quintic~\eqref{eq:quintic} used to fade the
+    vector potential across the obstacle band. The ramp $\alpha$ (solid) rises
+    from $0$ at the wall to $1$ at the band edge; its derivative $\alpha'$ (dashed)
+    is nonzero at the wall ($\alpha'(0)=\tfrac{15}{8}$, giving tangential slip
+    rather than a dead zone) and vanishes to second order at the edge, so the
+    bounded field meets the unconstrained one $C^2$-smoothly. The distance is
+    normalized by the band thickness, $q=d/\theta$.}
+  \label{fig:ramp}
+\end{figure}
+
+Two properties hold \emph{by construction}, independent of the ramp or the
+obstacle shape. First, $\bu_b$ is exactly divergence-free everywhere: it is a
+curl. Second, it is tangent to the surface: on the surface $d=0$, the first term
+of~\eqref{eq:bounded} carries the factor $\nabla d\times\bA$, whose component
+along the surface normal $\hat\bn=\nabla d$ is $(\nabla d\times\bA)\cdot\nabla d=0$
+identically, while the second term carries the factor $\alpha(0)=0$; hence
+$\bu_b\cdot\hat\bn=0$ on the wall. This is precisely the free-slip,
+boundary-respecting behaviour targeted by pointwise incompressible interpolation
+for grid-based fluids~\cite{chang2022}, obtained here in closed form on the
+analytic field with no grid and no projection. Beyond the band ($d\ge\theta$) the
+field is bit-identical to the unconstrained one.
+
+\paragraph{(E6) Obstacle: tangency, containment, and machine-zero divergence
+  \textnormal{(\texttt{e6\_obstacle.py})}.}
+We place a sphere of radius $R=1$ in the mode-sum field ($N=40$ modes, slope
+$s=1$, band $\theta=0.6$, pinned seed) and measure the three guarantees
+(Fig.~\ref{fig:obstacle}). \textbf{(a) Tangency:} over $20{,}000$ surface points
+the peak normal flux relative to the rms speed is
+$\max|\bu_b\cdot\hat\bn|/\mathrm{rms}|\bu_b| = 4.8\cdot10^{-16}$---machine zero,
+the free-slip guarantee holding exactly. \textbf{(b) Containment:} advecting
+$5000$ tracer particles seeded in and around the influence band through the steady
+field with RK4, the fraction that end up \emph{inside} the sphere is $0.00\%$ with
+the ramp against $2.84\%$ without it (raw field), matching the independent GPU
+particle-readback figure of $0$ versus ${\approx}2.9\%$. \textbf{(c) Divergence:}
+$\bu_b$ is an analytic curl, so $\dvg\bu_b=0$ identically; symbolic algebra
+confirms $\dvg\curl(f\bA)=0$, and a complex-step evaluation of the analytic
+divergence in the band interior gives rms $1.2\cdot10^{-15}$ (machine zero),
+whereas a naive central-difference stencil at $h=0.01$ reports rms
+$7.2\cdot10^{-4}$---the $\mathcal O(h^2)$ truncation of the stencil, not an error
+in the field. Every number here is emitted by \texttt{e6\_obstacle.py}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/obstacle.png}
+  \caption{Solid-obstacle handling by ramping the vector potential before the
+    curl~\eqref{eq:bounded}. \textbf{Left:} the unconstrained field passes
+    straight through the sphere. \textbf{Middle:} the bounded field
+    $\bu_b=\curl(\alpha(d/\theta)\bA)$ bends tangentially around it and is zero
+    inside---exactly divergence-free because it is a curl, and free-slip because
+    $\alpha(0)=0$. \textbf{Right:} the surface normal-flux ratio
+    $|\bu_b\cdot\hat\bn|/|\bu_b|$ at points around the sphere sits at machine zero
+    ($\max/\mathrm{rms}=4.8\cdot10^{-16}$). Of $5000$ advected particles, $0.00\%$
+    finish inside the sphere with the ramp versus $2.84\%$ without it
+    (\texttt{e6\_obstacle.py}, sphere $R=1$, $N=40$ modes, band $\theta=0.6$).}
+  \label{fig:obstacle}
+\end{figure}
 
 \section{Numerical validation}
 \label{sec:validation}
