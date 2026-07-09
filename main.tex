@@ -17,6 +17,18 @@
 \usepackage[hidelinks]{hyperref}
 \graphicspath{{figures/}}
 
+% Float placement: keep figures near their first reference (they were all
+% deferred to the end otherwise). Relax the default fraction limits so more of
+% a page may be occupied by floats, and allow more top/bottom floats per page.
+\usepackage{placeins}   % \FloatBarrier to pin figures within their section
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.9}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.7}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{4}
+
 \newtheorem{proposition}{Proposition}
 \newtheorem{lemma}{Lemma}
 \theoremstyle{remark}
@@ -46,14 +58,19 @@ for divergence-free flow fields}
 \begin{document}
 \maketitle
 
-\begin{figure}[h]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{figures/gallery.png}
   \caption{Two independent authoring axes on a single divergence-free field.
     \textbf{Left to right:} the phase-coherence knob $\lambda$ (\S\ref{sec:coherence})
     carries the field from random-phase noise to organized structure \emph{at a fixed
-    power spectrum}. \textbf{Top to bottom:} the helicity knob $p$ (\S\ref{sec:helicity})
-    sweeps the chirality from right- to left-handed. The two are orthogonal: across
+    power spectrum} (the vortices sharpen and separate as you move right). \textbf{Top to
+    bottom:} the helicity knob $p$ (\S\ref{sec:helicity}) sweeps the chirality from
+    right- to left-handed---read it in the colour, which is the out-of-plane velocity:
+    the top row leans one sign (its swirls corkscrew out of the page), the middle row is
+    balanced (mixed colour, no preferred twist), and the bottom row leans the opposite
+    sign (swirls corkscrew into the page). The layout of the streamlines is otherwise the
+    same down each column; only the handedness flips. The two are orthogonal: across
     every row the total energy is identical to four significant figures, and the net
     helicity $\int\bu\cdot\bomega$ is set by $p$ alone ($+3.1\cdot10^{-4}$, $0$,
     $-3.1\cdot10^{-4}$ for the three rows) and is unchanged by $\lambda$ to machine
@@ -143,6 +160,7 @@ The method is an authoring/bake tool in the spirit of spectral turbulence synthe
 graphics~\cite{stam1993,kim2008}; \S\ref{sec:discussion} positions it against curl-noise and
 states its limits.
 
+\FloatBarrier
 \section{Divergence-free spectral fields}
 \label{sec:construction}
 
@@ -159,7 +177,7 @@ with slope $s$ and a smooth high-frequency cutoff $k_c$. Steep $s$ concentrates 
 few large scales (smooth, silky flow); shallow $s$ spreads it across scales (fine, ragged
 flow) (Fig.~\ref{fig:slope}).
 
-\begin{figure}[t]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=\linewidth]{figures/slope.png}
   \caption{The spectral-slope axis $s$ of the envelope~\eqref{eq:env}, on one
@@ -215,6 +233,7 @@ $\hat\bu(\bk)=a_+(\bk)\he_+(\bk)+a_-(\bk)\he_-(\bk)$, and the construction assig
 amplitudes $a_\pm$ their envelope and phase (\S\ref{sec:helicity}--\S\ref{sec:coherence}).
 Transversality of $\he_\pm$ guarantees $\dvg\bu\equiv 0$ regardless of the amplitudes.
 
+\FloatBarrier
 \section{Helicity as a polarization control}
 \label{sec:helicity}
 
@@ -244,7 +263,7 @@ $\bomega=\pm|\bk|\,\bu$ mode-by-mode, i.e.\ $\bomega\parallel\bu$; the ABC
 flows~\cite{dombre1986} are the classical single-mode example
 (Fig.~\ref{fig:helix}).
 
-\begin{figure}[t]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.92\linewidth]{figures/helix.png}
   \caption{The chirality made concrete on a single Beltrami mode
@@ -269,6 +288,7 @@ with $\rho=\pm1$ only for a single-shell Beltrami field. For a spectrum spanning
 $|\rho|<1$ even at $p=\pm1$, because $\bu$ and $\bomega$ cannot be pointwise parallel across
 scales simultaneously; \S\ref{sec:validation} measures this ceiling.
 
+\FloatBarrier
 \section{Real fields and preservation of the helicity bias}
 \label{sec:hermitian}
 
@@ -308,6 +328,7 @@ Appendix~\ref{app:hermitian}. The practical upshot is all that the construction 
 assemble $\hat\bu(\bk)$ on a spectral half-space and set
 $\hat\bu(-\bk)=\overline{\hat\bu(\bk)}$, and the handedness bias comes through untouched.
 
+\FloatBarrier
 \section{Phase coherence at fixed spectrum}
 \label{sec:coherence}
 
@@ -348,6 +369,7 @@ the axis that curl-noise lacks. (In the demonstrations of \S\ref{sec:validation}
 phases are those of a sparse set of localized vortex ``blobs'', so raising $\lambda$ grows
 distinct rolling vortices out of the haze.)
 
+\FloatBarrier
 \section{A real-time analytic variant}
 \label{sec:modesum}
 
@@ -399,6 +421,7 @@ divergence-free to $\max_j|\bk_j\cdot\ehat_{i,j}|=5.6\cdot10^{-16}$ (the only
 nonzero divergence measured is $\mathcal O(h^2)$ finite-difference truncation),
 matching~E3.
 
+\FloatBarrier
 \section{Solid obstacles}
 \label{sec:obstacles}
 
@@ -438,7 +461,7 @@ $\alpha'(1)=\alpha''(1)=0$, so the field blends $C^2$-smoothly back into the
 unconstrained one at the edge of the band (Fig.~\ref{fig:ramp}). Inside the solid
 ($d\le0$) the field is identically zero.
 
-\begin{figure}[t]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.62\linewidth]{figures/ramp.png}
   \caption{The Bridson free-slip quintic~\eqref{eq:quintic} used to fade the
@@ -482,7 +505,7 @@ whereas a naive central-difference stencil at $h=0.01$ reports rms
 $7.2\cdot10^{-4}$---the $\mathcal O(h^2)$ truncation of the stencil, not an error
 in the field. Every number here is emitted by \texttt{e6\_obstacle.py}.
 
-\begin{figure}[t]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=\linewidth]{figures/obstacle.png}
   \caption{Solid-obstacle handling by ramping the vector potential before the
@@ -498,6 +521,7 @@ in the field. Every number here is emitted by \texttt{e6\_obstacle.py}.
   \label{fig:obstacle}
 \end{figure}
 
+\FloatBarrier
 \section{Numerical validation}
 \label{sec:validation}
 
@@ -557,7 +581,7 @@ predicted $-\tfrac12$), the $\mathcal O(N^{-1/2})$ fluctuation of \S\ref{sec:mod
 grid-measured $\rho$ and $h_N$ are two $\mathcal O(N^{-1/2})$ proxies for the same finite-$N$
 net helicity.) Figure~\ref{fig:validation} plots both results.
 
-\begin{figure}[t]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=\linewidth]{figures/validation.png}
   \caption{The two quantitative results of E2 and E3. \textbf{Left:} for the FFT
@@ -604,7 +628,7 @@ arithmetic is embarrassingly parallel across pixels, which is why the
 fragment-shader implementation (\texttt{code/modesum.frag}), not a scalar CPU loop,
 is the real-time target.
 
-\begin{figure}[t]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=\linewidth]{figures/performance.png}
   \caption{Two cost regimes (CPU \texttt{numpy} reference, one machine, no GPU).
@@ -618,6 +642,7 @@ is the real-time target.
   \label{fig:perf}
 \end{figure}
 
+\FloatBarrier
 \section{Discussion and limitations}
 \label{sec:discussion}
 
@@ -659,7 +684,7 @@ cost class but not its constant-time \emph{evaluation}; the mode-sum variant
   \label{tab:curlnoise}
 \end{table}
 
-\begin{figure}[t]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.92\linewidth]{figures/curlnoise.png}
   \caption{Curl-noise (left) and our construction at $\lambda=1$ (right), built on the
@@ -699,7 +724,7 @@ scalar. Because the field is divergence-free by construction, this transport nee
 projection---the expensive step of a fluid solver---so the two new controls come at no
 run-time cost to the downstream renderer.
 
-\begin{figure}[t]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=\linewidth]{figures/advection.png}
   \caption{Both axes drive the standard procedural pipeline. A compact dye blob
@@ -727,6 +752,7 @@ reported in this paper is regenerated by a pinned-seed script via \texttt{make r
 
 \appendix
 
+\FloatBarrier
 \section{Proof of Proposition~\ref{prop:pres} and implementation notes}
 \label{app:hermitian}
 
