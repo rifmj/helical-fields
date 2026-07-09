@@ -20,6 +20,7 @@ reproduce:
 	$(PY) code/e3_mode_sum.py
 	$(PY) code/e4_phase_coherence.py
 	$(PY) code/e5_performance.py
+	$(PY) code/e6_obstacle.py
 
 clean:
 	rm -f main.aux main.log main.out main.fls main.fdb_latexmk main.synctex.gz main.toc
