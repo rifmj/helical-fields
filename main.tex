@@ -41,9 +41,7 @@
 for divergence-free flow fields}
 \author{Rifat Jumagulov\\
 \small \texttt{jum.rifm@gmail.com}}
-\date{July 7, 2026\\[4pt]
-\small Code and data: \url{https://github.com/rifmj/helical-fields}\quad
-DOI: \href{https://doi.org/10.5281/zenodo.21246333}{10.5281/zenodo.21246333}}
+\date{July 7, 2026}
 
 \begin{document}
 \maketitle
@@ -66,19 +64,23 @@ DOI: \href{https://doi.org/10.5281/zenodo.21246333}{10.5281/zenodo.21246333}}
 
 \begin{abstract}
 We present a solver-free method for synthesizing divergence-free vector fields for the
-procedural animation of smoke, particles, and other advected media, with three mutually
-independent controls: spectral slope, helicity, and phase coherence. The construction works
-in the frequency domain on the \emph{helical} (curl-eigenvector) basis, which is
-divergence-free by construction and reduces helicity to a single polarization parameter,
-continuous from mirror-symmetric to maximally helical (Beltrami). The phase-coherence
-control is, to our knowledge, new to procedural flow: it interpolates the inter-mode phases
-between random and structured \emph{at an exactly fixed power spectrum}, carrying the field
-from unstructured noise to organized filaments without changing its energy content---an
-axis that curl-noise does not expose. We prove that the real-field (Hermitian)
-symmetrization preserves the helicity polarization, give the construction in two and three
-dimensions, and provide two evaluation paths: an FFT bake and an analytic Beltrami mode-sum
-that evaluates per pixel in a fragment shader (GLSL included). Every number in the paper is
-reproduced by a pinned-seed script (\texttt{make reproduce}).
+procedural animation of smoke, particles, and other advected media, giving the artist three
+independent dials on top of the usual noise: the spectral slope (how ragged versus silky the
+flow looks), the \emph{helicity} (whether the swirls corkscrew left or right), and the
+\emph{phase coherence} (whether the motion organizes into distinct rolling vortices or stays
+an even haze). The construction works in the frequency domain on the \emph{helical} basis---the
+natural directions in which a swirl reinforces its own rotation---which is divergence-free by
+construction and turns handedness into a single dial, continuous from mirror-symmetric (no
+preferred twist) to maximally helical (every swirl fully corkscrewed, a Beltrami field). The
+phase-coherence dial is, to our knowledge, new to procedural flow: it slides the field from
+formless noise to organized filaments while holding the amount of motion at every scale fixed,
+so the flow reorganizes without speeding up or slowing down---an axis that curl-noise does not
+expose. We show that making the field real-valued (the step every graphics implementation
+needs) does not wash out the chosen handedness, give the construction in two and three
+dimensions, and provide two interchangeable ways to evaluate it: an FFT bake for offline
+authoring and an analytic mode-sum that runs per pixel in a fragment shader (GLSL included).
+The payoff for the artist is direct control over how a flow twists and how tightly it
+organizes---qualities that ordinary curl-noise leaves fixed---at no run-time cost downstream.
 \end{abstract}
 
 \section{Introduction}
@@ -96,15 +98,23 @@ pointwise variants~\cite{chang2022} and differentiable formulations~\cite{ding20
 enlarge its geometry and controllability rather than the two qualities we target below.
 
 Its expressive range is, however, narrow. Curl-noise is isotropic and exposes essentially two
-knobs---frequency and amplitude. Two qualities that distinguish real turbulent flow are not
-directly controllable:
+knobs---frequency and amplitude. This paper adds three dials to a divergence-free field. One,
+the spectral slope, sharpens control the broader noise family already offers in weaker
+forms~\cite{lagae2010,galerne2012} into an exact per-scale envelope (\S\ref{sec:construction}).
+The other two are qualities that distinguish real turbulent flow and that no curl-noise variant
+exposes directly:
 \begin{itemize}[nosep]
-\item \textbf{Helicity} (chirality): whether the vortices of the flow prefer a handedness.
-Helicity, $\int \bu\cdot\bomega\,d\bx$, is a genuine three-dimensional invariant of ideal
-flow~\cite{moffatt1969}; a field can range from mirror-symmetric to fully helical
-(a Beltrami field, $\bomega\parallel\bu$)~\cite{constantin1988,dombre1986}.
-\item \textbf{Phase organization}: at a \emph{fixed} power spectrum, a field with random
-inter-mode phases is featureless (Gaussian), whereas correlated phases concentrate energy
+\item \textbf{Helicity} (chirality): whether the swirls of the flow corkscrew left or right.
+Watch a dye streak carried by the field---a right-handed flow winds it into a clockwise helix,
+a left-handed one into its mirror, and a mirror-symmetric flow shows no preference.
+Quantitatively, helicity $\int \bu\cdot\bomega\,d\bx$ is a genuine three-dimensional invariant
+of ideal flow~\cite{moffatt1969}; a field can range from mirror-symmetric to fully helical
+(a Beltrami field, $\bomega\parallel\bu$, in which every swirl is maximally
+corkscrewed)~\cite{constantin1988,dombre1986}.
+\item \textbf{Phase organization}: whether the motion lines up into distinct rolling vortices
+or stays an even, structureless haze. At a \emph{fixed} power spectrum---the same amount of
+motion at every scale, so the flow neither speeds up nor slows down---a field with random
+inter-mode phases looks featureless (Gaussian), whereas correlated phases pull that same energy
 into coherent filaments and sheets. That the phases, not the amplitude spectrum, carry the
 structural information of a field is well established in turbulence and in
 cosmology~\cite{coles2000}.
@@ -177,6 +187,14 @@ dimensions.
 
 \subsection{Three dimensions: the helical basis}
 \label{sec:helical}
+The idea in one sentence: instead of describing each wave by its $x$-, $y$-, $z$-components,
+we describe it by how much it corkscrews clockwise versus counter-clockwise. These two
+corkscrew directions are the \emph{helical} vectors below. They are special because the curl
+operator---the thing that measures local rotation---simply scales them rather than mixing them
+(they are its eigenvectors, \eqref{eq:eigen}), so a swirl built from one of them reinforces its
+own rotation. Working in this basis makes handedness a single number and keeps the field
+divergence-free automatically.
+
 For each $\bk\ne\mathbf 0$ choose a real orthonormal transverse frame
 $(\ehat_1,\ehat_2)$ with $\ehat_1,\ehat_2\perp\bk$ and $\{\ehat_1,\ehat_2,\khat\}$
 right-handed ($\khat=\bk/|\bk|$). This is the Craya--Herring frame~\cite{herring1974}. Define
@@ -199,6 +217,11 @@ Transversality of $\he_\pm$ guarantees $\dvg\bu\equiv 0$ regardless of the ampli
 
 \section{Helicity as a polarization control}
 \label{sec:helicity}
+
+In plain terms, this section builds the left/right corkscrew dial. Because the helical basis
+already separates clockwise swirls from counter-clockwise ones, biasing the handedness is just
+a matter of putting more energy into one than the other: a single number $p\in[-1,1]$ slides
+from all-left through balanced to all-right. Everything below makes that precise.
 
 The helicity of the field is diagonal in the helical basis. Writing
 $\bomega=\curl\bu$ and using~\eqref{eq:eigen},
@@ -249,7 +272,14 @@ scales simultaneously; \S\ref{sec:validation} measures this ceiling.
 \section{Real fields and preservation of the helicity bias}
 \label{sec:hermitian}
 
-Graphics needs a \emph{real} field. Building modes with complex amplitudes yields a complex
+Why this section matters to a practitioner: assembling the field from complex waves is
+convenient, but a velocity field you can actually advect through must be real-valued, and the
+standard step that makes it real pairs up opposite waves in a way that could, in principle,
+quietly cancel the left/right bias the artist just dialled in. It does not. The handedness
+survives that step exactly---the dial you set is the dial you get---and the rest of this section
+proves it. A reader who is content to take that on faith can skip to \S\ref{sec:coherence}.
+
+In detail: building modes with complex amplitudes yields a complex
 field; the standard remedy is to impose Hermitian symmetry
 $\hat\bu(-\bk)=\overline{\hat\bu(\bk)}$, after which the inverse transform is exactly real.
 The nontrivial question is whether this symmetrization, which couples each $+\bk$ mode to its
@@ -272,39 +302,22 @@ half-space $H$ (exact per realization, as the symmetrization conjugates only pha
 the bias~\eqref{eq:split} survives verbatim.
 \end{proposition}
 
-\begin{proof}
-With $\khat(-\bk)=-\khat(\bk)$ and the stated frame convention,
-$\he_+(-\bk)=\tfrac{1}{\sqrt2}(\ehat_1(-\bk)+i\,\ehat_2(-\bk))
-=\tfrac{1}{\sqrt2}(\ehat_1(\bk)-i\,\ehat_2(\bk))=\overline{\he_+(\bk)}=\he_-(\bk)$, which
-is~\eqref{eq:parity}. Write
-$\hat\bu(\bk)=a_+\he_+(\bk)+a_-\he_-(\bk)$. Then
-$\overline{\hat\bu(\bk)}=\overline{a_+}\,\overline{\he_+(\bk)}+\overline{a_-}\,
-\overline{\he_-(\bk)} =\overline{a_+}\,\he_-(\bk)+\overline{a_-}\,\he_+(\bk)$.
-Expanding $\hat\bu(-\bk)=b_+\he_+(-\bk)+b_-\he_-(-\bk)=b_+\he_-(\bk)+b_-\he_+(\bk)$
-and matching to $\overline{\hat\bu(\bk)}$ gives $b_+=\overline{a_+}$, $b_-=\overline{a_-}$.
-Hence $|a_+(-\bk)|=|a_+(\bk)|$ and likewise for $a_-$; substituting into~\eqref{eq:helicity}
-and pairing $\pm\bk$ gives the stated half-space sum. The symmetrization conjugates phases; it
-moves no energy between the $\pm$ channels.
-\end{proof}
-
-\begin{remark}[convention]
-The conclusion depends on the antipodal frame choice $\ehat_2(-\bk)=-\ehat_2(\bk)$; the
-opposite choice $\ehat_2(-\bk)=+\ehat_2(\bk)$ would instead swap the $\pm$ channels between
-$\bk$ and $-\bk$. In practice one need not track the frame at $-\bk$ at all: assembling
-$\hat\bu(\bk)$ on a spectral half-space and setting $\hat\bu(-\bk)=\overline{\hat\bu(\bk)}$
-directly realizes the preserving convention.
-\end{remark}
-
-\begin{remark}[Nyquist plane]
-On an $N^d$ grid the Nyquist frequencies ($k_i=-N/2$ on some axis) are self-conjugate under
-the discrete Fourier modular arithmetic and have no distinct $-\bk$ partner; na\"ive
-mirror-conjugation there leaks divergence. The fix is to zero the Nyquist plane. With the
-cutoff $k_c\ll N/2$ of~\eqref{eq:env} these modes carry negligible energy, but a robust
-implementation zeroes them explicitly.
-\end{remark}
+The proof is a short two-line computation on the helical parity relation~\eqref{eq:parity};
+it, together with the frame-convention and Nyquist-plane implementation notes, is deferred to
+Appendix~\ref{app:hermitian}. The practical upshot is all that the construction needs:
+assemble $\hat\bu(\bk)$ on a spectral half-space and set
+$\hat\bu(-\bk)=\overline{\hat\bu(\bk)}$, and the handedness bias comes through untouched.
 
 \section{Phase coherence at fixed spectrum}
 \label{sec:coherence}
+
+This is the organization dial. Picture the same amount of motion at every scale---the flow is
+neither faster nor slower, finer nor coarser---but arranged two different ways: as an even,
+directionless haze, or gathered into a few distinct rolling vortices. What separates the two is
+not \emph{how much} energy each scale carries but whether the waves at different scales line up
+in phase. This dial slides between those two arrangements while leaving the per-scale energy
+untouched, so the flow visibly reorganizes without changing pace. Curl-noise has no equivalent:
+its arrangement is whatever its potential happened to give.
 
 The power spectrum $|\hat\bu(\bk)|^2$ fixes how much energy sits at each scale; it says nothing
 about how the modes are \emph{aligned} in phase. A field whose inter-mode phases are
@@ -337,6 +350,19 @@ distinct rolling vortices out of the haze.)
 
 \section{A real-time analytic variant}
 \label{sec:modesum}
+
+The two evaluation paths compute the same kind of field but serve opposite use cases, and the
+choice between them is a practical one. The FFT bake (\S\ref{sec:construction}) fills a full,
+dense spectrum on a grid once, then hands downstream animation a static texture---richest detail
+and exact tiling, but a per-rebuild cost, so it is the offline authoring tool. The mode-sum
+below sums a sparse handful of analytic waves and evaluates the field at any single point on
+demand, with no grid and no transform---cheaper to re-evaluate and resolution-independent, at
+the price of sparser detail and only approximate tiling, which is what makes it the real-time,
+in-shader option. They are not merely two implementations of one routine: the FFT path is dense
+and grid-baked, the mode-sum path is sparse and pointwise, and \S\ref{sec:validation}
+(E3, E5) quantifies both the cost split and the one behavioural difference it introduces (a
+small residual handedness at $p=0$). Use the FFT bake when authoring a hero field offline; use
+the mode-sum when the field must be evaluated live.
 
 The FFT construction pays an $N^d$ transform per rebuild---bake-scale, not real-time. An
 alternative sums a sparse set of analytic helical modes and evaluates the field \emph{per
@@ -686,11 +712,54 @@ run-time cost to the downstream renderer.
   \label{fig:advection}
 \end{figure}
 
-\paragraph{Conclusion.} Building divergence-free fields on the helical basis turns two
-otherwise-inaccessible qualities of a flow---its chirality and its degree of organization at
-fixed spectrum---into two independent, continuously variable controls, while keeping
-divergence-freeness exact. The constructions are elementary and reproducible; the accompanying
-code regenerates every number reported above.
+\paragraph{Conclusion.} Building divergence-free fields on the helical basis gives the artist
+three independent dials---the spectral slope, the chirality (helicity), and the degree of
+organization at fixed spectrum (phase coherence)---the latter two otherwise inaccessible to
+curl-noise, all continuously variable and all keeping divergence-freeness exact. The same
+potential-ramp mechanism handles solid obstacles with a measured free-slip, no-penetration
+guarantee and no solver (\S\ref{sec:obstacles}). The constructions are elementary and
+reproducible.
+
+\paragraph{Code and data availability.} All code and data are available at
+\url{https://github.com/rifmj/helical-fields}
+(DOI: \href{https://doi.org/10.5281/zenodo.21246333}{10.5281/zenodo.21246333}). Every number
+reported in this paper is regenerated by a pinned-seed script via \texttt{make reproduce}.
+
+\appendix
+
+\section{Proof of Proposition~\ref{prop:pres} and implementation notes}
+\label{app:hermitian}
+
+\begin{proof}[Proof of Proposition~\ref{prop:pres}]
+With $\khat(-\bk)=-\khat(\bk)$ and the stated frame convention,
+$\he_+(-\bk)=\tfrac{1}{\sqrt2}(\ehat_1(-\bk)+i\,\ehat_2(-\bk))
+=\tfrac{1}{\sqrt2}(\ehat_1(\bk)-i\,\ehat_2(\bk))=\overline{\he_+(\bk)}=\he_-(\bk)$, which
+is~\eqref{eq:parity}. Write
+$\hat\bu(\bk)=a_+\he_+(\bk)+a_-\he_-(\bk)$. Then
+$\overline{\hat\bu(\bk)}=\overline{a_+}\,\overline{\he_+(\bk)}+\overline{a_-}\,
+\overline{\he_-(\bk)} =\overline{a_+}\,\he_-(\bk)+\overline{a_-}\,\he_+(\bk)$.
+Expanding $\hat\bu(-\bk)=b_+\he_+(-\bk)+b_-\he_-(-\bk)=b_+\he_-(\bk)+b_-\he_+(\bk)$
+and matching to $\overline{\hat\bu(\bk)}$ gives $b_+=\overline{a_+}$, $b_-=\overline{a_-}$.
+Hence $|a_+(-\bk)|=|a_+(\bk)|$ and likewise for $a_-$; substituting into~\eqref{eq:helicity}
+and pairing $\pm\bk$ gives the stated half-space sum. The symmetrization conjugates phases; it
+moves no energy between the $\pm$ channels.
+\end{proof}
+
+\begin{remark}[convention]
+The conclusion depends on the antipodal frame choice $\ehat_2(-\bk)=-\ehat_2(\bk)$; the
+opposite choice $\ehat_2(-\bk)=+\ehat_2(\bk)$ would instead swap the $\pm$ channels between
+$\bk$ and $-\bk$. In practice one need not track the frame at $-\bk$ at all: assembling
+$\hat\bu(\bk)$ on a spectral half-space and setting $\hat\bu(-\bk)=\overline{\hat\bu(\bk)}$
+directly realizes the preserving convention.
+\end{remark}
+
+\begin{remark}[Nyquist plane]
+On an $N^d$ grid the Nyquist frequencies ($k_i=-N/2$ on some axis) are self-conjugate under
+the discrete Fourier modular arithmetic and have no distinct $-\bk$ partner; na\"ive
+mirror-conjugation there leaks divergence. The fix is to zero the Nyquist plane. With the
+cutoff $k_c\ll N/2$ of~\eqref{eq:env} these modes carry negligible energy, but a robust
+implementation zeroes them explicitly.
+\end{remark}
 
 \begin{thebibliography}{99}
 \itemsep2pt
