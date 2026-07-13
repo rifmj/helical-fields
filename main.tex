@@ -53,7 +53,7 @@
 for divergence-free flow fields}
 \author{Rifat Jumagulov\\
 \small \texttt{jum.rifm@gmail.com}}
-\date{July 7, 2026}
+\date{July 11, 2026}
 
 \begin{document}
 \maketitle
@@ -72,8 +72,8 @@ for divergence-free flow fields}
     sign (swirls corkscrew into the page). The layout of the streamlines is otherwise the
     same down each column; only the handedness flips. The two are orthogonal: across
     every row the total energy is identical to four significant figures, and the net
-    helicity $\int\bu\cdot\bomega$ is set by $p$ alone ($+3.1\cdot10^{-4}$, $0$,
-    $-3.1\cdot10^{-4}$ for the three rows) and is unchanged by $\lambda$ to machine
+    helicity $\int\bu\cdot\bomega$ is set by $p$ alone ($+6.3\cdot10^{-4}$, $0$,
+    $-6.4\cdot10^{-4}$ for the three rows) and is unchanged by $\lambda$ to machine
     precision. Colour is the out-of-plane velocity $u_z$; black curves are in-plane
     streamlines; each panel is a $z$-slice of a $48^3$ field.}
   \label{fig:teaser}
@@ -96,8 +96,11 @@ expose. We show that making the field real-valued (the step every graphics imple
 needs) does not wash out the chosen handedness, give the construction in two and three
 dimensions, and provide two interchangeable ways to evaluate it: an FFT bake for offline
 authoring and an analytic mode-sum that runs per pixel in a fragment shader (GLSL included).
-The payoff for the artist is direct control over how a flow twists and how tightly it
-organizes---qualities that ordinary curl-noise leaves fixed---at no run-time cost downstream.
+Solid obstacles are handled in the same framework by ramping the vector potential before the
+curl, which keeps the field exactly divergence-free and tangent to the surface with no solver
+and no pressure projection. The payoff for the artist is direct control over how a flow twists
+and how tightly it organizes---qualities that ordinary curl-noise leaves fixed---at no run-time
+cost downstream.
 \end{abstract}
 
 \section{Introduction}
@@ -153,8 +156,11 @@ structured at fixed power spectrum (\S\ref{sec:coherence});
 \item an analytic Beltrami mode-sum variant that evaluates per pixel with no FFT, suitable
 for a real-time fragment shader, together with its exact and statistical properties
 (\S\ref{sec:modesum});
-\item numerical validation of divergence-freeness, reality, and helicity control for both
-constructions (\S\ref{sec:validation}).
+\item a solid-obstacle treatment that ramps the vector potential before taking the curl,
+keeping the field exactly divergence-free and tangent to the surface---free-slip and
+no-penetration---for any obstacle shape, with no solver (\S\ref{sec:obstacles});
+\item numerical validation of divergence-freeness, reality, helicity control, and the
+obstacle guarantees for both constructions (\S\ref{sec:validation}, \S\ref{sec:obstacles}).
 \end{enumerate}
 The method is an authoring/bake tool in the spirit of spectral turbulence synthesis for
 graphics~\cite{stam1993,kim2008}; \S\ref{sec:discussion} positions it against curl-noise and
@@ -273,8 +279,8 @@ flows~\cite{dombre1986} are the classical single-mode example
     into a one-turn helix (bright is the latest time); reversing the sign of $p$
     mirrors the handedness exactly. This is the single-shell limit in which
     $|\rho|=1$; a multi-shell spectrum superposes many such windings, and the net
-    $\int\bu\cdot\bomega$ tracks $p$ in sign and magnitude ($\mp2.6\cdot10^{-3}$ at
-    $p=\mp1$, $\approx0$ at $p=0$ on a $32^3$ grid).}
+    $\int\bu\cdot\bomega$ tracks $p$ in sign and magnitude ($+8.5\cdot10^{-4}$ at
+    $p=+1$, $-8.6\cdot10^{-4}$ at $p=-1$, $\approx0$ at $p=0$ on a $32^3$ grid).}
   \label{fig:helix}
 \end{figure}
 
@@ -367,7 +373,10 @@ i.i.d.\ random (the RPA surrogate of the same amplitudes). Sliding $\lambda$ car
 from formless noise to organized filaments \emph{without changing the energy at any scale} ---
 the axis that curl-noise lacks. (In the demonstrations of \S\ref{sec:validation} the reference
 phases are those of a sparse set of localized vortex ``blobs'', so raising $\lambda$ grows
-distinct rolling vortices out of the haze.)
+distinct rolling vortices out of the haze.) Figure~\ref{fig:curlnoise} shows the two ends of
+this axis side by side at a fixed spectrum: the $\lambda=0$ field is the featureless Gaussian
+haze that curl-noise produces, while $\lambda=1$ pulls the same energy into distinct coherent
+vortices.
 
 \FloatBarrier
 \section{A real-time analytic variant}
@@ -525,9 +534,10 @@ in the field. Every number here is emitted by \texttt{e6\_obstacle.py}.
 \section{Numerical validation}
 \label{sec:validation}
 
-We report three experiments, each reproduced by a self-contained script accompanying the
-paper (\texttt{code/e1..e3}). The printed numbers below are exactly those the scripts emit at
-the pinned seed.
+We report five experiments (E1--E5), each reproduced by a self-contained script accompanying
+the paper (\texttt{code/e1\_*..e5\_*}); the obstacle experiment E6 is reported in
+\S\ref{sec:obstacles} (\texttt{code/e6\_obstacle.py}). The printed numbers below are exactly
+those the scripts emit at the pinned seed.
 
 \paragraph{(E1) Helical identities \textnormal{(\texttt{e1\_helical\_identities.py})}.}
 Over $2000$ random real wavevectors, the transversality and curl-eigenvector
@@ -656,8 +666,8 @@ potential---whereas the helical representation exposes the $\pm$ polarization sp
 (helicity, \S\ref{sec:helicity}) and the common per-mode phase (coherence,
 \S\ref{sec:coherence}) as continuous knobs. Curl-noise is precisely the isotropic,
 random-phase, mirror-symmetric corner of this space: our $\lambda=0$ field is statistically
-indistinguishable from it (equal-spectrum speed flatness $2.00\pm0.02$ for both, versus
-$5.1$ at $\lambda=1$; Fig.~\ref{fig:curlnoise}). The FFT path shares curl-noise's per-frame
+indistinguishable from it (equal-spectrum speed flatness $\approx2$ for both, versus
+$4.0$ at $\lambda=1$; Fig.~\ref{fig:curlnoise}). The FFT path shares curl-noise's per-frame
 cost class but not its constant-time \emph{evaluation}; the mode-sum variant
 (\S\ref{sec:modesum}) is the real-time offering.
 
@@ -712,7 +722,7 @@ property of dynamics.
 practical deployment bakes the field to a texture or an OpenVDB volume and advects downstream.
 \item The mode-sum path is real-time but sparse: it trades away exact tiling and dense-shell
 detail, and its $p=0$ state is only mirror-symmetric in the mean ($\mathcal O(N^{-1/2})$
-residual, \S6).
+residual, \S\ref{sec:modesum}).
 \item The relative-helicity ceiling $|\rho(\pm1)|<1$ is intrinsic to a multi-shell spectrum;
 a single-shell field reaches $\pm1$ but looks monochromatic.
 \end{itemize}
@@ -745,10 +755,14 @@ potential-ramp mechanism handles solid obstacles with a measured free-slip, no-p
 guarantee and no solver (\S\ref{sec:obstacles}). The constructions are elementary and
 reproducible.
 
+\paragraph{Acknowledgements.} I am grateful to Christopher Batty for generously engaging with
+this work and for valuable feedback and encouragement on an earlier draft.
+
 \paragraph{Code and data availability.} All code and data are available at
 \url{https://github.com/rifmj/helical-fields}
 (DOI: \href{https://doi.org/10.5281/zenodo.21246333}{10.5281/zenodo.21246333}). Every number
-reported in this paper is regenerated by a pinned-seed script via \texttt{make reproduce}.
+reported in this paper is regenerated by a pinned-seed script via \texttt{make reproduce},
+and every figure is regenerated from source via \texttt{make figures}.
 
 \appendix
 

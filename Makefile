@@ -1,6 +1,6 @@
 PY ?= python3
 
-.PHONY: pdf pdf-bibtex reproduce clean
+.PHONY: pdf pdf-bibtex reproduce figures clean
 
 # Default: main.tex ships a self-contained thebibliography (no bibtex needed).
 pdf:
@@ -20,6 +20,18 @@ reproduce:
 	$(PY) code/e3_mode_sum.py
 	$(PY) code/e4_phase_coherence.py
 	$(PY) code/e5_performance.py
+	$(PY) code/e6_obstacle.py
+
+# Regenerate every figure in the paper from code (writes figures/*.png).
+figures:
+	$(PY) code/fig_gallery.py
+	$(PY) code/fig_slope.py
+	$(PY) code/fig_helix.py
+	$(PY) code/fig_ramp.py
+	$(PY) code/fig_validation.py
+	$(PY) code/fig_performance.py
+	$(PY) code/fig_curlnoise.py
+	$(PY) code/fig_advection.py
 	$(PY) code/e6_obstacle.py
 
 clean:
