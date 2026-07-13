@@ -8,8 +8,8 @@ authors:
   - given-names: Rifat
     family-names: Jumagulov
     email: jum.rifm@gmail.com
-version: 1.0.3
-date-released: "2026-07-07"
+version: 1.0.4
+date-released: "2026-07-13"
 license: MIT
 identifiers:
   - type: doi
