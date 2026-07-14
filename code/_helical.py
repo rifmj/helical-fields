@@ -38,7 +38,7 @@ def frame(khat):
 # common to the three vector components, so it cancels in the power spectrum and
 # in the +/- energy split: energy and helicity bias are frozen across lambda.
 # ----------------------------------------------------------------------------
-def _ref_phase_3d(N, freqs, seed, nblob=6, width=0.6):
+def _ref_phase_3d(N, seed, nblob=10, width=1.2):
     """Structured reference phase from a few 3D localized vortex blobs; its FFT
     phase is automatically antisymmetric (the blob field is real)."""
     rng = np.random.default_rng(seed)
@@ -81,34 +81,57 @@ def build_fft_3d(N, p, slope, seed, lam=0.0, kc_frac=0.30, ref_seed=17):
     e2x = khy * e1z - khz * e1y; e2y = khz * e1x - khx * e1z; e2z = khx * e1y - khy * e1x
     inv2 = 1.0 / np.sqrt(2.0)
 
-    # helical amplitudes with random phases (e2 construction)
-    ph_p = np.exp(1j * 2 * np.pi * rng.random((N, N, N)))
-    ph_m = np.exp(1j * 2 * np.pi * rng.random((N, N, N)))
-    ap = np.sqrt((1 + p) / 2) * env * ph_p
-    am = np.sqrt((1 - p) / 2) * env * ph_m
+    # Per-channel phase: each helical amplitude a_+/a_- carries its own phase
+    #   phase_pm(k) = theta_ref_pm(k) + (1 - lam) * theta_rand_pm(k),
+    # with a SEPARATE structured reference per channel and INDEPENDENT random
+    # parts, so at lam=0 the two channels are independent random phases (an
+    # isotropic Gaussian haze) and at lam=1 they lock onto their (distinct)
+    # structured references.  Because only unit-modulus phases are applied,
+    # |a_pm| = sqrt((1 +/- p)/2)*E is untouched: the power spectrum AND the +/-
+    # energy split (hence the net helicity bias p) are frozen exactly at every
+    # lam -- only the inter-mode phase coherence, i.e. the spatial organization,
+    # varies.
+    #
+    # Two references (not one shared) is what keeps p=0 ISOTROPIC at every lam:
+    # with a single shared reference, at lam=1 both channels collapse to the same
+    # phase and a_+ = a_- forces the p=0 field to be linearly polarized along the
+    # frame vector e1 (u_z washes out).  Distinct references keep the two channels
+    # out of phase, so the balanced field stays elliptically polarized / isotropic.
+    #
+    # (An earlier revision baked *independent* random phases into a_+/a_- and then
+    # multiplied by a common reference phase; that never removed the random phase,
+    # so lam=1 stayed a haze and coherence did not respond to lam in 3D at all.
+    # Reality here is enforced by copy symmetrization below, not an averaging
+    # projection, which would mix the +/- channels and distort rho(p).)
+    idx = (-np.arange(N)) % N
+    lin = np.arange(N ** 3).reshape(N, N, N)
+    upper = lin < lin[np.ix_(idx, idx, idx)]               # strict spectral half-space
+    theta_ref_p = _ref_phase_3d(N, ref_seed)               # structured reference, + channel
+    theta_ref_m = _ref_phase_3d(N, ref_seed + 101)         # structured reference, - channel
+
+    def _rand_phase():
+        # uniform on the half-space, theta(-k) = -theta(k) on the other half
+        # (0 on self-conjugate modes): a genuine i.i.d.-uniform antisymmetric
+        # random phase, not the triangular difference of two uniforms.
+        raw = np.where(upper, 2 * np.pi * rng.random((N, N, N)), 0.0)
+        return raw - raw[np.ix_(idx, idx, idx)]
+
+    php = np.where(mask, np.exp(1j * (theta_ref_p + (1.0 - lam) * _rand_phase())), 0.0)
+    phm = np.where(mask, np.exp(1j * (theta_ref_m + (1.0 - lam) * _rand_phase())), 0.0)
+    ap = np.sqrt((1 + p) / 2) * env * php
+    am = np.sqrt((1 - p) / 2) * env * phm
     uhx = inv2 * (ap * (e1x + 1j * e2x) + am * (e1x - 1j * e2x))
     uhy = inv2 * (ap * (e1y + 1j * e2y) + am * (e1y - 1j * e2y))
     uhz = inv2 * (ap * (e1z + 1j * e2z) + am * (e1z - 1j * e2z))
     uhat = np.stack([uhx, uhy, uhz])
 
-    # phase-coherence multiplier c_lambda(k), common to all three components.
-    # theta_ref is antisymmetric (blob field is real) and theta_rand is made
-    # antisymmetric explicitly, so theta is antisymmetric for every lambda and
-    # a common unit-modulus factor exp(i theta) keeps the field exactly real.
-    if lam > 0.0:
-        idx = (-np.arange(N)) % N
-        theta_ref = _ref_phase_3d(N, freqs, ref_seed)
-        raw = 2 * np.pi * rng.random((N, N, N))
-        theta_rand = 0.5 * (raw - raw[np.ix_(idx, idx, idx)])
-        theta = theta_ref + (1 - lam) * theta_rand
-        c = np.where(mask, np.exp(1j * theta), 0.0)
-        uhat = uhat * c[None, :, :, :]
-
-    # Hermitian symmetrization: uhat(-k) = conj(uhat(k)) makes the inverse
-    # transform exactly real (paper sec. 4).  It preserves k.uhat = 0, so the
-    # field stays divergence-free, and preserves the +/- energy split.
-    idx = (-np.arange(N)) % N
-    uhat = 0.5 * (uhat + np.conj(uhat[:, idx][:, :, idx][:, :, :, idx]))
+    # Reality by COPY (not averaging): keep uhat(k) on the spectral half-space and
+    # set uhat(-k) = conj(uhat(k)) on the other half; self-conjugate modes (DC and
+    # any Nyquist-plane mode) are excluded by `mask` and are zero.  Unlike the
+    # averaging projection 0.5(uhat + conj(uhat(-k))), copying leaves |a_pm| on the
+    # half-space untouched, so it does not mix the +/- channels or distort helicity.
+    mir = lambda A: A[:, idx][:, :, idx][:, :, :, idx]
+    uhat = np.where(upper[None, :, :, :], uhat, np.conj(mir(uhat)))
 
     u = np.stack([np.fft.ifftn(uhat[c]).real for c in range(3)])
     return u, uhat, freqs
@@ -148,14 +171,21 @@ def build_2d(N, slope, lam, seed, kc_frac=0.28, nblob=5):
         dy = (Y - cy + np.pi) % (2 * np.pi) - np.pi
         blob += sgn * np.exp(-(dx * dx + dy * dy) / (2 * w * w))
     theta_ref = np.angle(np.fft.fft2(blob))
-    mir = lambda A: A[(-np.arange(N)) % N][:, (-np.arange(N)) % N]
-    raw = 2 * np.pi * rng.random((N, N))
-    theta_rand = 0.5 * (raw - mir(raw))
+    idx = (-np.arange(N)) % N
+    mir = lambda A: A[idx][:, idx]
+    # uniform antisymmetric random phase: uniform on a spectral half-space, then
+    # theta(-k) = -theta(k) (a genuine i.i.d.-uniform RPA surrogate, not the
+    # triangular difference of two uniforms).
+    lin = np.arange(N * N).reshape(N, N)
+    upper = lin < mir(lin)
+    raw = np.where(upper, 2 * np.pi * rng.random((N, N)), 0.0)
+    theta_rand = raw - mir(raw)
     theta = theta_ref + (1 - lam) * theta_rand
     what = E * np.exp(1j * theta); what[0, 0] = 0.0
+    # u = (d_y psi, -d_x psi), psi_hat = omega_hat/|k|^2, omega = d_x v - d_y u (eq. 2)
     with np.errstate(divide='ignore', invalid='ignore'):
-        uhat = -1j * np.where(K2 > 0, KY / K2, 0.0) * what
-        vhat = +1j * np.where(K2 > 0, KX / K2, 0.0) * what
+        uhat = +1j * np.where(K2 > 0, KY / K2, 0.0) * what
+        vhat = -1j * np.where(K2 > 0, KX / K2, 0.0) * what
     u = np.fft.ifft2(uhat).real
     v = np.fft.ifft2(vhat).real
     omega = np.fft.ifft2(1j * (KX * vhat - KY * uhat)).real

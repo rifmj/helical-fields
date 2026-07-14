@@ -53,7 +53,7 @@
 for divergence-free flow fields}
 \author{Rifat Jumagulov\\
 \small \texttt{jum.rifm@gmail.com}}
-\date{July 11, 2026}
+\date{July 14, 2026}
 
 \begin{document}
 \maketitle
@@ -66,16 +66,16 @@ for divergence-free flow fields}
     carries the field from random-phase noise to organized structure \emph{at a fixed
     power spectrum} (the vortices sharpen and separate as you move right). \textbf{Top to
     bottom:} the helicity knob $p$ (\S\ref{sec:helicity}) sweeps the chirality from
-    right- to left-handed---read it in the colour, which is the out-of-plane velocity:
-    the top row leans one sign (its swirls corkscrew out of the page), the middle row is
-    balanced (mixed colour, no preferred twist), and the bottom row leans the opposite
-    sign (swirls corkscrew into the page). The layout of the streamlines is otherwise the
-    same down each column; only the handedness flips. The two are orthogonal: across
-    every row the total energy is identical to four significant figures, and the net
-    helicity $\int\bu\cdot\bomega$ is set by $p$ alone ($+6.3\cdot10^{-4}$, $0$,
-    $-6.4\cdot10^{-4}$ for the three rows) and is unchanged by $\lambda$ to machine
-    precision. Colour is the out-of-plane velocity $u_z$; black curves are in-plane
-    streamlines; each panel is a $z$-slice of a $48^3$ field.}
+    right-handed (top) through balanced (middle) to left-handed (bottom). Chirality is a
+    correlation, not a colour: in a helical field the in-plane swirl and the out-of-plane
+    velocity (the colour, $u_z$) are locked in a definite sense, and that sense reverses
+    between the top and bottom rows, while the middle row has no preferred twist. The two
+    axes are orthogonal: the total energy is identical across every row (it does not
+    depend on $p$ at all), and the net helicity $\int\bu\cdot\bomega$ is set by $p$
+    alone---exactly antisymmetric, $+1.3\cdot10^{-3}$, $0$, $-1.3\cdot10^{-3}$ for the
+    three rows---and is unchanged by $\lambda$ to machine precision. Colour is the
+    out-of-plane velocity $u_z$; black curves are in-plane streamlines; each panel is a
+    $z$-slice of a $48^3$ field.}
   \label{fig:teaser}
 \end{figure}
 
@@ -88,7 +88,8 @@ flow looks), the \emph{helicity} (whether the swirls corkscrew left or right), a
 an even haze). The construction works in the frequency domain on the \emph{helical} basis---the
 natural directions in which a swirl reinforces its own rotation---which is divergence-free by
 construction and turns handedness into a single dial, continuous from mirror-symmetric (no
-preferred twist) to maximally helical (every swirl fully corkscrewed, a Beltrami field). The
+preferred twist) to maximally helical (every mode fully corkscrewed---Beltrami mode by
+mode). The
 phase-coherence dial is, to our knowledge, new to procedural flow: it slides the field from
 formless noise to organized filaments while holding the amount of motion at every scale fixed,
 so the flow reorganizes without speeding up or slowing down---an axis that curl-noise does not
@@ -99,8 +100,8 @@ authoring and an analytic mode-sum that runs per pixel in a fragment shader (GLS
 Solid obstacles are handled in the same framework by ramping the vector potential before the
 curl, which keeps the field exactly divergence-free and tangent to the surface with no solver
 and no pressure projection. The payoff for the artist is direct control over how a flow twists
-and how tightly it organizes---qualities that ordinary curl-noise leaves fixed---at no run-time
-cost downstream.
+and how tightly it organizes---qualities that ordinary curl-noise leaves fixed---at no added
+solver cost downstream.
 \end{abstract}
 
 \section{Introduction}
@@ -158,13 +159,21 @@ for a real-time fragment shader, together with its exact and statistical propert
 (\S\ref{sec:modesum});
 \item a solid-obstacle treatment that ramps the vector potential before taking the curl,
 keeping the field exactly divergence-free and tangent to the surface---free-slip and
-no-penetration---for any obstacle shape, with no solver (\S\ref{sec:obstacles});
+no-penetration---for any obstacle with a smooth signed distance, with no solver
+(\S\ref{sec:obstacles});
 \item numerical validation of divergence-freeness, reality, helicity control, and the
 obstacle guarantees for both constructions (\S\ref{sec:validation}, \S\ref{sec:obstacles}).
 \end{enumerate}
 The method is an authoring/bake tool in the spirit of spectral turbulence synthesis for
-graphics~\cite{stam1993,kim2008}; \S\ref{sec:discussion} positions it against curl-noise and
-states its limits.
+graphics~\cite{stam1993,kim2008}. Synthesizing divergence-free random fields with a
+prescribed spectrum is itself long established outside graphics---kinematic simulation
+sums unsteady random Fourier modes constrained to be solenoidal~\cite{fung1992}, and
+divergence-free synthetic-turbulence generators build the field as the curl of a random
+vector potential with a target spectrum~\cite{saad2017}. Our contribution is not that
+machinery but the pair of \emph{artist-facing} controls it does not expose---a single
+helicity/chirality dial and a phase-coherence dial at fixed spectrum---together with the
+in-shader mode-sum and the potential-ramp obstacle treatment. \S\ref{sec:discussion}
+positions the method against curl-noise and states its limits.
 
 \FloatBarrier
 \section{Divergence-free spectral fields}
@@ -179,9 +188,15 @@ through a radial envelope
 E(\bk) = |\bk|^{-s}\,e^{-|\bk|^2/k_c^2},
 \label{eq:env}
 \end{equation}
-with slope $s$ and a smooth high-frequency cutoff $k_c$. Steep $s$ concentrates energy in a
-few large scales (smooth, silky flow); shallow $s$ spreads it across scales (fine, ragged
-flow) (Fig.~\ref{fig:slope}).
+with slope $s$ and a smooth high-frequency cutoff $k_c$. Here $E$ is the \emph{amplitude}
+envelope, $|\hat\bu(\bk)|\propto E(\bk)$, so the modal energy scales as $|\bk|^{-2s}$ and the
+energy in a $d$-dimensional shell as $|\bk|^{d-1-2s}$; we quote $s$ as the amplitude exponent
+throughout. (In three dimensions the envelope is placed directly on the velocity; in the 2D
+stream-function path~\eqref{eq:2d} it is placed on the vorticity, so the velocity there
+carries an extra $|\bk|^{-1}$ and a given $s$ means a slope steeper by one. We keep the two
+parametrizations because each is the natural one in its construction.) Steep $s$ concentrates
+energy in a few large scales (smooth, silky flow); shallow $s$ spreads it across scales (fine,
+ragged flow) (Fig.~\ref{fig:slope}).
 
 \begin{figure}[htbp]
   \centering
@@ -200,11 +215,12 @@ In two dimensions every divergence-free field is the curl of a scalar stream fun
 $\psi$, $\bu=(\partial_y\psi,-\partial_x\psi)$. Prescribing a vorticity spectrum
 $\hat\omega(\bk)$ and setting $\hat\psi=\hat\omega/|\bk|^2$ gives
 \begin{equation}
-\hat u(\bk) = -\,i\,\frac{k_y}{|\bk|^2}\,\hat\omega(\bk), \qquad
-\hat v(\bk) = +\,i\,\frac{k_x}{|\bk|^2}\,\hat\omega(\bk),
+\hat u(\bk) = +\,i\,\frac{k_y}{|\bk|^2}\,\hat\omega(\bk), \qquad
+\hat v(\bk) = -\,i\,\frac{k_x}{|\bk|^2}\,\hat\omega(\bk),
 \label{eq:2d}
 \end{equation}
-which satisfies $\bk\cdot\hat\bu(\bk)=0$ identically. There is no helicity in two dimensions;
+with the sign convention $\omega=\partial_x v-\partial_y u=-\Delta\psi$, which satisfies
+$\bk\cdot\hat\bu(\bk)=0$ identically. There is no helicity in two dimensions;
 the only chirality available is the \emph{sign} of the scalar vorticity, which biases whether
 vortices turn clockwise or counter-clockwise. We treat the genuine helicity control in three
 dimensions.
@@ -264,9 +280,10 @@ We therefore split each mode's energy between the two channels by a single
 \end{equation}
 so that $p$ biases $\mathcal H$ directly. At $p=0$ the two channels carry equal energy and
 the field is statistically mirror-symmetric ($\mathcal H=0$ in the mean). At $p=\pm1$ all
-energy is in one channel and the field is a pure helical (Beltrami) field,
-$\bomega=\pm|\bk|\,\bu$ mode-by-mode, i.e.\ $\bomega\parallel\bu$; the ABC
-flows~\cite{dombre1986} are the classical single-mode example
+energy is in one channel and the field is purely helical: $\bomega=\pm|\bk|\,\bu$
+mode by mode, so $\bomega\parallel\bu$ within each shell (a genuine Beltrami field only
+for a single shell; across shells the alignment is imperfect, \S\ref{sec:validation}). The
+ABC flows~\cite{dombre1986} are the classical single-shell example
 (Fig.~\ref{fig:helix}).
 
 \begin{figure}[htbp]
@@ -353,25 +370,29 @@ featureless; introducing correlations among the phases concentrates energy into 
 coherent structures. That structural information lives in the phases rather than the amplitude
 spectrum is a standard observation~\cite{coles2000}.
 
-We expose this as a control. Let $c_\lambda(\bk)$ be a \emph{common} unit-modulus complex
-scalar applied to all components of a mode, $\hat\bu(\bk)\mapsto c_\lambda(\bk)\hat\bu(\bk)$.
-Because the multiplier is common to the vector's three components, it cancels in the one-point
-spectral tensor $\Phi_{ab}(\bk)=\hat u_a\overline{\hat u_b}$ (the factor $|c_\lambda|^2=1$
-drops out), so the power spectrum \emph{and} the helical polarization~\eqref{eq:split} are
-frozen \emph{exactly} at every $\lambda$; and with an antisymmetric phase
-$\theta(-\bk)=-\theta(\bk)$ the field stays real and divergence-free. Two convenient families,
-with $\theta(\bk)$ drawn uniformly on a spectral half-space and $\lambda\in[0,1]$:
-\begin{align}
-\text{(linear)}\quad & c_\lambda(\bk)=\exp\!\big(i(1-\lambda)\,\theta(\bk)\big),
-\label{eq:schemeA}\\[2pt]
-\text{(chord)}\quad & c_\lambda(\bk)=\frac{\lambda+(1-\lambda)e^{i\theta(\bk)}}
-{\big|\lambda+(1-\lambda)e^{i\theta(\bk)}\big|}.
-\label{eq:schemeB}
-\end{align}
-At $\lambda=1$ the phases are those of a chosen structured reference; at $\lambda=0$ they are
-i.i.d.\ random (the RPA surrogate of the same amplitudes). Sliding $\lambda$ carries the field
-from formless noise to organized filaments \emph{without changing the energy at any scale} ---
-the axis that curl-noise lacks. (In the demonstrations of \S\ref{sec:validation} the reference
+We expose this as a control. Assign each helical amplitude its own unit-modulus phase,
+\begin{equation}
+a_\pm(\bk)\ \longmapsto\ e^{\,i\varphi_\pm(\bk)}\,a_\pm(\bk),
+\qquad
+\varphi_\pm(\bk)=\theta_{\mathrm{ref}}^{\pm}(\bk)+(1-\lambda)\,\theta_\pm(\bk),
+\quad \lambda\in[0,1].
+\label{eq:phase}
+\end{equation}
+Because the moduli $|a_\pm(\bk)|$ are untouched, the entire \emph{helical energy spectrum}---the
+power spectrum $|a_+|^2+|a_-|^2$ \emph{and} the polarization split~\eqref{eq:split}, hence the
+helicity---is frozen \emph{exactly} at every $\lambda$; only the phases move. Here
+$\theta_{\mathrm{ref}}^{\pm}$ are structured reference phases (one per channel) and
+$\theta_\pm$ are independent uniform random phases, all drawn antisymmetric
+($\theta(-\bk)=-\theta(\bk)$) so the field stays real and (transversality being untouched)
+divergence-free. At $\lambda=1$ each channel locks onto its reference; at $\lambda=0$ they carry
+independent i.i.d.\ phases (an isotropic Gaussian haze, the RPA surrogate of the same
+amplitudes). Using \emph{distinct} references for the two channels keeps the balanced field
+($p=0$) isotropic at every $\lambda$: a single shared reference would collapse
+$a_+$ and $a_-$ to the same phase at $\lambda=1$ and linearly polarize the $p=0$ field. In two
+dimensions there is a single scalar amplitude, so \eqref{eq:phase} reduces to a common per-mode
+phase $e^{\,i(\theta_{\mathrm{ref}}+(1-\lambda)\theta)}$ on the stream function (used in E4). Sliding
+$\lambda$ carries the field from formless noise to organized filaments \emph{without changing
+the energy at any scale}---the axis that curl-noise lacks. (In the demonstrations of \S\ref{sec:validation} the reference
 phases are those of a sparse set of localized vortex ``blobs'', so raising $\lambda$ grows
 distinct rolling vortices out of the haze.) Figure~\ref{fig:curlnoise} shows the two ends of
 this axis side by side at a fixed spectrum: the $\lambda=0$ field is the featureless Gaussian
@@ -405,7 +426,11 @@ point}, with no grid and no transform:
 \end{equation}
 with directions $\khat_j$ uniform on the sphere, amplitude $a_j=|\bk_j|^{-s}$, transverse
 frame $(\ehat_{1,j},\ehat_{2,j})\perp\bk_j$, and per-mode helicity sign $s_j\in\{+1,-1\}$
-drawn with $\Pr(s_j=+1)=(1+p)/2$. Each term is the real part of a single helical mode: it is
+drawn with $\Pr(s_j=+1)=(1+p)/2$. Because the directions are sampled uniformly on the
+sphere rather than on the integer lattice, the mode-sum does not reproduce the FFT field's
+exact per-shell energy; matching a target shell spectrum requires weighting the draws by the
+lattice mode density ($\propto|\bk|^{d-1}$) or sampling $|\bk_j|$ from it. This is one facet
+of the sparse-versus-dense trade-off (\S\ref{sec:discussion}). Each term is the real part of a single helical mode: it is
 analytically transverse to its own $\bk_j$, so $\dvg\bu\equiv0$ pointwise, and it is a
 Beltrami mode, $\curl\bu_j=s_j|\bk_j|\bu_j$. Consequently the vorticity is a second cheap
 mode-sum requiring no derivatives,
@@ -483,17 +508,27 @@ unconstrained one at the edge of the band (Fig.~\ref{fig:ramp}). Inside the soli
   \label{fig:ramp}
 \end{figure}
 
-Two properties hold \emph{by construction}, independent of the ramp or the
-obstacle shape. First, $\bu_b$ is exactly divergence-free everywhere: it is a
-curl. Second, it is tangent to the surface: on the surface $d=0$, the first term
-of~\eqref{eq:bounded} carries the factor $\nabla d\times\bA$, whose component
-along the surface normal $\hat\bn=\nabla d$ is $(\nabla d\times\bA)\cdot\nabla d=0$
-identically, while the second term carries the factor $\alpha(0)=0$; hence
-$\bu_b\cdot\hat\bn=0$ on the wall. This is precisely the free-slip,
-boundary-respecting behaviour targeted by pointwise incompressible interpolation
-for grid-based fluids~\cite{chang2022}, obtained here in closed form on the
-analytic field with no grid and no projection. Beyond the band ($d\ge\theta$) the
-field is bit-identical to the unconstrained one.
+Two properties hold \emph{by construction}, wherever the signed distance is
+smooth (so that $\nabla d$ exists---away from the medial axis and any edges or
+corners of the obstacle, a measure-zero set the ramp never needs to resolve).
+First, $\bu_b$ is a curl, so it is exactly divergence-free: classically outside
+the surface, and distributionally across it (the field is zero inside $d<0$ and a
+tangential slip flow just outside, so there is a velocity discontinuity at $d=0$,
+as for any free-slip wall---see below). Second, it is tangent to the surface: on
+$d=0$ the first term of~\eqref{eq:bounded} carries the factor $\nabla d\times\bA$,
+whose component along the surface normal $\hat\bn=\nabla d$ is
+$(\nabla d\times\bA)\cdot\nabla d=0$ identically, while the second term carries the
+factor $\alpha(0)=0$; hence $\bu_b\cdot\hat\bn=0$ on the wall. Because the wall
+normal velocity vanishes identically, $\{d=0\}$ is an invariant surface of the
+exact flow: a continuous trajectory cannot cross it, so containment is a theorem
+for the continuous field and only the time integrator can leak (E6 measures that
+leak). This is precisely the free-slip, boundary-respecting behaviour targeted by
+pointwise incompressible interpolation for grid-based fluids~\cite{chang2022},
+obtained here in closed form on the analytic field with no grid and no projection.
+The ramp $\alpha$ is $C^2$ at the band edge $q=1$ but only one-sided at the wall
+($\alpha'(0^-)=0\neq\tfrac{15}{8}=\alpha'(0^+)$), which is exactly the slip
+discontinuity noted above. Beyond the band ($d\ge\theta$) the field is
+bit-identical to the unconstrained one.
 
 \paragraph{(E6) Obstacle: tangency, containment, and machine-zero divergence
   \textnormal{(\texttt{e6\_obstacle.py})}.}
@@ -534,10 +569,12 @@ in the field. Every number here is emitted by \texttt{e6\_obstacle.py}.
 \section{Numerical validation}
 \label{sec:validation}
 
-We report five experiments (E1--E5), each reproduced by a self-contained script accompanying
-the paper (\texttt{code/e1\_*..e5\_*}); the obstacle experiment E6 is reported in
-\S\ref{sec:obstacles} (\texttt{code/e6\_obstacle.py}). The printed numbers below are exactly
-those the scripts emit at the pinned seed.
+We report six experiments (E1--E5 and E7), each reproduced by a self-contained script
+accompanying the paper (\texttt{code/e1\_*..e5\_*}, \texttt{code/e7\_*}); the obstacle
+experiment E6 is reported in \S\ref{sec:obstacles} (\texttt{code/e6\_obstacle.py}). E4
+validates the phase-coherence axis on the 2D construction and E7 on the 3D helical builder
+that also generates the figures. The printed numbers below are exactly those the scripts emit
+at the pinned seed.
 
 \paragraph{(E1) Helical identities \textnormal{(\texttt{e1\_helical\_identities.py})}.}
 Over $2000$ random real wavevectors, the transversality and curl-eigenvector
@@ -608,23 +645,55 @@ net helicity.) Figure~\ref{fig:validation} plots both results.
 The phase-coherence axis (\S\ref{sec:coherence}) claims to move the field from
 formless noise to organized filaments \emph{without touching the energy at any
 scale}. We verify both halves on the 2D construction ($160^2$ grid, slope
-$s=1.4$). As the coherence knob $\lambda$ is swept $0\to1$ under scheme~A
-\eqref{eq:schemeA}, the total spectral energy is invariant to
-$\sum|\hat\bu|^2 = 5.209353$ at every $\lambda$ (spread $1.8\cdot10^{-15}$,
-relative $3.4\cdot10^{-16}$), and the per-shell energy spectrum is likewise
+$s=1.4$). As the coherence knob $\lambda$ is swept $0\to1$ under the phase
+interpolation~\eqref{eq:phase}, the total spectral energy is invariant to
+$\sum|\hat\bu|^2 = 5.209353$ at every $\lambda$ (spread $8.9\cdot10^{-16}$,
+relative $1.7\cdot10^{-16}$), and the per-shell energy spectrum is likewise
 frozen (maximum relative deviation of any shell across $\lambda$ is
-$2.7\cdot10^{-16}$); the field stays divergence-free
+$1.8\cdot10^{-16}$); the field stays divergence-free
 ($\max|\bk\cdot\hat\bu|/|\hat\bu|\le1.4\cdot10^{-17}$) and real
-($\max|\mathrm{Im}\,\bu|\sim10^{-7}$, at rounding). The spatial organization,
+($\max|\mathrm{Im}\,\bu|\sim10^{-7}$---the phase-extraction floor of the reference
+blobs, where $\arg$ of a near-null mode is ill-conditioned, not machine
+$\epsilon$; the advected field is its real part regardless). The spatial organization,
 by contrast, changes monotonically: the flatness (kurtosis) of the vorticity,
-which is $3$ for a Gaussian random-phase field and grows as energy concentrates
+which is $\approx3$ for a random-phase field and grows as energy concentrates
 into sparse coherent structures, rises
 \[
-  \mathrm{flatness}(\omega)\;=\;3.13,\;3.93,\;5.79,\;8.20,\;9.22
+  \mathrm{flatness}(\omega)\;=\;2.75,\;2.88,\;3.05,\;5.35,\;9.22
   \qquad\text{for }\lambda=0,\,0.25,\,0.5,\,0.75,\,1
 \]
-(16-draw mean), from the Gaussian value at $\lambda=0$ up to strongly
-intermittent at $\lambda=1$. Structure appears; energy per scale does not move.
+(16-draw mean; the $\lambda=0$ value sits just below $3$ because the
+fixed-amplitude modes make the random-phase surrogate mildly sub-Gaussian), from
+a near-Gaussian haze at $\lambda=0$ up to strongly intermittent at $\lambda=1$.
+Structure appears; energy per scale does not move.
+
+\paragraph{(E7) The same, in 3D, on the figure-generating builder
+  \textnormal{(\texttt{e7\_phase\_coherence\_3d.py})}.}
+E4 exercises the 2D stream-function path; E7 runs the identical test on the 3D
+helical builder that generates the teaser and advection figures
+(\texttt{\_helical.build\_fft\_3d}), so the figure code is itself under test.
+On a $48^3$ grid ($s=1.4$, $p=0.6$), sweeping $\lambda=0\to1$ under~\eqref{eq:phase}
+holds the total energy fixed to $\sum|\hat\bu|^2=36.059$ \emph{exactly} (relative
+spread $2.0\cdot10^{-16}$), holds the net helicity fixed to
+$\mathcal H=7.85\cdot10^{-4}$ (relative spread $1.4\cdot10^{-16}$) and the per-shell
+spectrum fixed (max deviation $1.7\cdot10^{-16}$), and keeps the field
+divergence-free ($\le9\cdot10^{-17}$) and real ($\sim4\cdot10^{-20}$). The spatial
+organization again grows monotonically---the vorticity-magnitude flatness (the
+$|\bomega|$ analogue of the E4 statistic; $\approx3.1$ is the Gaussian baseline for
+the magnitude of three components) rises
+\[
+  \mathrm{flatness}(|\bomega|)\;=\;3.11,\;3.33,\;10.88,\;23.35,\;26.70
+  \qquad\text{for }\lambda=0,\,0.25,\,0.5,\,0.75,\,1
+\]
+(8-draw mean)---while the field's relative helicity at $p=+1$ is
+$\rho\approx0.77$, matching the FFT construction of E2, and the balanced field
+($p=0$) stays isotropic at every $\lambda$. This is the check whose
+absence let an earlier 3D builder ship with the coherence knob inoperative
+(it applied a common phase on top of already-random amplitudes, so
+$\mathrm{flatness}(|\bomega|)$ stayed flat at $\approx3.1$ for every $\lambda$); the
+present builder (independent per-channel phases, each locking onto its own
+structured reference, \eqref{eq:phase}) makes coherence respond to $\lambda$ while
+freezing spectrum and helicity.
 
 \paragraph{(E5) The two cost regimes \textnormal{(\texttt{e5\_performance.py})}.}
 The two constructions occupy different cost budgets, whose scaling
@@ -632,7 +701,7 @@ Fig.~\ref{fig:perf} measures (single-machine CPU \texttt{numpy} reference; the
 scaling is the claim, absolute times are machine-dependent). The FFT path is a
 \emph{bake} cost---one $\mathcal O(N^3\log N)$ rebuild per authored field, after
 which the field is a static texture ($3.0$\,MB of \texttt{float32} \texttt{vec3}
-at $64^3$) and advection downstream is free. The mode-sum path trades the grid for
+at $64^3$) and advection downstream carries no solver cost. The mode-sum path trades the grid for
 an $\mathcal O(M)$ per-point evaluation whose throughput falls as $1/M$; the
 arithmetic is embarrassingly parallel across pixels, which is why the
 fragment-shader implementation (\texttt{code/modesum.frag}), not a scalar CPU loop,
@@ -664,10 +733,16 @@ what they leave free to control (Table~\ref{tab:curlnoise}): curl-noise is fixed
 potential is chosen---its handedness is not a parameter, and its phases are those of the
 potential---whereas the helical representation exposes the $\pm$ polarization split
 (helicity, \S\ref{sec:helicity}) and the common per-mode phase (coherence,
-\S\ref{sec:coherence}) as continuous knobs. Curl-noise is precisely the isotropic,
-random-phase, mirror-symmetric corner of this space: our $\lambda=0$ field is statistically
-indistinguishable from it (equal-spectrum speed flatness $\approx2$ for both, versus
-$4.0$ at $\lambda=1$; Fig.~\ref{fig:curlnoise}). The FFT path shares curl-noise's per-frame
+\S\ref{sec:coherence}) as continuous knobs. Our $\lambda=0$ field sits at the
+random-phase, mirror-symmetric, isotropic corner of this space, which is the same corner
+curl-noise occupies---both are featureless at a fixed spectrum (equal-spectrum vorticity
+flatness $\approx3.0$, the Gaussian value, versus $\approx11.9$ at $\lambda=1$;
+Fig.~\ref{fig:curlnoise}). We stress that
+this is a comparison against a \emph{random-phase spectral surrogate} built at the matched
+spectrum, not against a specific curl-of-Perlin implementation, whose lattice and octave
+structure imposes its own weak phase correlations; the point is only that the featureless
+end of the coherence axis is curl-noise-\emph{like}, and that $\lambda$ opens an axis
+curl-noise leaves fixed. The FFT path shares curl-noise's per-frame
 cost class but not its constant-time \emph{evaluation}; the mode-sum variant
 (\S\ref{sec:modesum}) is the real-time offering.
 
@@ -690,19 +765,23 @@ cost class but not its constant-time \emph{evaluation}; the mode-sum variant
   \caption{Curl-noise and the present construction both produce exactly
     divergence-free fields, but by different mechanisms, which is what makes helicity and
     phase organization controllable here and not there. The random-phase, mirror-symmetric,
-    isotropic setting of our method reproduces curl-noise (Fig.~\ref{fig:curlnoise}).}
+    isotropic setting of our method occupies the same featureless corner as curl-noise
+    (Fig.~\ref{fig:curlnoise}).}
   \label{tab:curlnoise}
 \end{table}
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.92\linewidth]{figures/curlnoise.png}
-  \caption{Curl-noise (left) and our construction at $\lambda=1$ (right), built on the
+  \caption{The random-phase corner ($\lambda=0$, left; the curl-noise-like, spectrally
+    matched surrogate---see text) and our construction at $\lambda=1$ (right), built on the
     \emph{same} power spectrum and the same random seed, so that only the inter-mode phases
-    differ. Colour is speed $|\bu|$, white curves are streamlines. Curl-noise's random phases
-    give a homogeneous field (speed flatness $\approx2$, Gaussian); the structured phases
-    concentrate the same energy into distinct coherent vortices (flatness $\approx4$) without
-    changing the spectrum---the organization axis curl-noise does not expose.}
+    differ. Colour is speed $|\bu|$, white curves are streamlines. The random phases
+    give a homogeneous field (vorticity flatness $\approx3.0$, the Gaussian value); the
+    structured phases concentrate the same energy into distinct coherent vortices (vorticity
+    flatness $\approx11.9$) without changing the spectrum---the organization axis curl-noise
+    does not expose. (Speed flatness, by contrast, barely moves between the two panels; the
+    reorganization shows in the vorticity, as in E4.)}
   \label{fig:curlnoise}
 \end{figure}
 
@@ -731,8 +810,9 @@ a single-shell field reaches $\pm1$ but looks monochromatic.
 (Fig.~\ref{fig:advection}):
 particle advection, semi-Lagrangian smoke density, and volume raymarching of an advected
 scalar. Because the field is divergence-free by construction, this transport needs no pressure
-projection---the expensive step of a fluid solver---so the two new controls come at no
-run-time cost to the downstream renderer.
+projection---the expensive step of a fluid solver---so the two new controls add no solver
+cost to the downstream renderer (the advection itself, of course, still costs what advection
+costs).
 
 \begin{figure}[htbp]
   \centering
@@ -905,6 +985,18 @@ X.~Wang, Y.~Xu, S.~Liu, B.~Ren, J.~Bender, et al.
 trends, and challenges.
 \newblock {\em Computational Visual Media} 10(5):803--858, 2024.
 \newblock \href{https://doi.org/10.1007/s41095-023-0368-y}{doi:10.1007/s41095-023-0368-y}.
+
+\bibitem{fung1992}
+J.~C.~H.~Fung, J.~C.~R.~Hunt, N.~A.~Malik, and R.~J.~Perkins.
+\newblock Kinematic simulation of homogeneous turbulence by unsteady random Fourier modes.
+\newblock {\em Journal of Fluid Mechanics} 236:281--318, 1992.
+\newblock \href{https://doi.org/10.1017/S0022112092001423}{doi:10.1017/S0022112092001423}.
+
+\bibitem{saad2017}
+T.~Saad, D.~Cline, R.~Stoll, and J.~C.~Sutherland.
+\newblock Scalable tools for generating synthetic isotropic turbulence with arbitrary spectra.
+\newblock {\em AIAA Journal} 55(1):327--331, 2017.
+\newblock \href{https://doi.org/10.2514/1.J055230}{doi:10.2514/1.J055230}.
 
 \end{thebibliography}
 

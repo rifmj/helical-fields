@@ -21,6 +21,7 @@ reproduce:
 	$(PY) code/e4_phase_coherence.py
 	$(PY) code/e5_performance.py
 	$(PY) code/e6_obstacle.py
+	$(PY) code/e7_phase_coherence_3d.py
 
 # Regenerate every figure in the paper from code (writes figures/*.png).
 figures:

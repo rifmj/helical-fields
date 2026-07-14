@@ -51,13 +51,18 @@ def build_2d(N, slope, lam, seed, kc_frac=0.28, nblob=5):
     theta_ref = np.angle(np.fft.fft2(blob))              # structured, antisymmetric
 
     # random ANTISYMMETRIC phase: theta(-k) = -theta(k)
-    mir = lambda A: A[(-np.arange(N)) % N][:, (-np.arange(N)) % N]
-    raw = 2 * np.pi * rng.random((N, N))
-    theta_rand = 0.5 * (raw - mir(raw))
+    idx = (-np.arange(N)) % N
+    mir = lambda A: A[idx][:, idx]
+    # uniform antisymmetric random phase: uniform on a spectral half-space, then
+    # theta(-k) = -theta(k) -- a genuine i.i.d.-uniform RPA surrogate, not the
+    # triangular difference of two uniforms.
+    lin = np.arange(N * N).reshape(N, N)
+    upper = lin < mir(lin)
+    raw = np.where(upper, 2 * np.pi * rng.random((N, N)), 0.0)
+    theta_rand = raw - mir(raw)
 
-    # paper section 5, scheme A (linear): start from the structured reference and
-    # multiply by a common unit-modulus scalar c_lambda(k) = exp(i(1-lambda)theta_rand),
-    # i.e. add a random phase whose magnitude shrinks as lambda -> 1.
+    # paper section 5 (linear phase interpolation): start from the structured
+    # reference and add a random phase whose magnitude shrinks as lambda -> 1.
     #   lambda = 0 : theta_ref + theta_rand  -> i.i.d. random phases (RPA surrogate)
     #   lambda = 1 : theta_ref               -> the structured reference
     theta = theta_ref + (1 - lam) * theta_rand           # antisymmetric for all lambda
@@ -65,8 +70,8 @@ def build_2d(N, slope, lam, seed, kc_frac=0.28, nblob=5):
     what[0, 0] = 0.0                                      # |what| = E exactly
 
     with np.errstate(divide='ignore', invalid='ignore'):
-        uhat = -1j * np.where(K2 > 0, KY / K2, 0.0) * what
-        vhat = +1j * np.where(K2 > 0, KX / K2, 0.0) * what
+        uhat = +1j * np.where(K2 > 0, KY / K2, 0.0) * what
+        vhat = -1j * np.where(K2 > 0, KX / K2, 0.0) * what
     u = np.fft.ifft2(uhat)
     v = np.fft.ifft2(vhat)
     omega = np.fft.ifft2(1j * (KX * vhat - KY * uhat))    # vorticity field
